@@ -1,0 +1,65 @@
+name: Standalone executables (build only)
+# 构建和上传 Actions 临时产物，不创建 Release、不推送 tag、不发布 npm。
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: darwin-arm64
+          - os: macos-15-intel
+            target: darwin-x64
+          - os: ubuntu-24.04
+            target: linux-x64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+          - os: ubuntu-24.04
+            target: linux-x64-musl
+          - os: ubuntu-24.04-arm
+            target: linux-arm64-musl
+          - os: windows-latest
+            target: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Install pinned Bun for builds only
+        shell: bash
+        run: npm install --global "bun@$(cat .bun-version)"
+      - run: npm run build
+      - name: Bun runtime regression
+        run: bun test test/client.test.mjs test/run.test.mjs
+      - name: Build executable
+        run: npm run build:binary -- ${{ matrix.target }}
+      - name: Test native executable
+        if: ${{ !endsWith(matrix.target, '-musl') }}
+        run: npm run test:binary -- ${{ matrix.target }}
+      - name: Test musl executable on Alpine
+        if: ${{ endsWith(matrix.target, '-musl') }}
+        run: docker run --rm -v "${{ github.workspace }}:/app" -w /app node:22-alpine node scripts/test-binary.mjs ${{ matrix.target }}
+      - name: Test Unix installer
+        if: runner.os != 'Windows'
+        run: npm run test:install
+      - name: Test Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./test/install.windows.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: anyuse-${{ matrix.target }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 7

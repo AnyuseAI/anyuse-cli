@@ -1,0 +1,51 @@
+{
+  "name": "@anyuse/cli",
+  "version": "0.1.0",
+  "description": "Discover, quote, and run external capabilities through the Anyuse API.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "anyuse": "dist/index.js"
+  },
+  "files": [
+    "dist/*.js",
+    "skills/anyuse/SKILL.md"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnyuseApp/cli.git"
+  },
+  "homepage": "https://anyuse.app",
+  "bugs": {
+    "url": "https://github.com/AnyuseApp/cli/issues"
+  },
+  "keywords": [
+    "anyuse",
+    "cli",
+    "agents",
+    "api"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:package": "node scripts/test-package.mjs",
+    "check": "npm run typecheck && npm test && npm run test:package",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check",
+    "build:binary": "node scripts/build-binaries.mjs",
+    "test:binary": "node scripts/test-binary.mjs",
+    "test:install": "node --test test/install.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.10",
+    "typescript": "5.9.3"
+  }
+}

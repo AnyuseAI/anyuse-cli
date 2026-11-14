@@ -1,0 +1,13 @@
+import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+const { RELEASE_VERSION, RELEASE_TAG, GITHUB_REF, GITHUB_REPOSITORY } = process.env;
+assert.equal(RELEASE_VERSION, pkg.version, "Requested version must match package.json");
+assert.equal(GITHUB_REF, `refs/tags/v${pkg.version}`, "Select the matching vVERSION Git tag, not a branch");
+assert.equal(pkg.repository.url, `git+https://github.com/${GITHUB_REPOSITORY}.git`, "Repository must match package metadata");
+assert(["latest", "next"].includes(RELEASE_TAG), "Choose latest or next");
+assert(!(pkg.version.includes("-") && RELEASE_TAG === "latest"), "Prerelease versions must use next");
+assert.equal(pkg.publishConfig.access, "public");
+assert.equal(pkg.publishConfig.registry, "https://registry.npmjs.org/");
+assert(!pkg.private, "private packages cannot be released");
+console.log(`Release inputs verified for ${pkg.name}@${pkg.version} (${RELEASE_TAG}). No package was published.`);

@@ -1,0 +1,46 @@
+name: Publish npm package (manual)
+# No push/release trigger. The operator must select an existing vVERSION tag.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact package.json version (select its vVERSION tag as the workflow ref)'
+        required: true
+        type: string
+      dist_tag:
+        description: 'npm dist-tag'
+        type: choice
+        options: [latest, next]
+        default: latest
+permissions:
+  contents: read
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Validate release selection
+        run: node scripts/check-release.mjs
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ inputs.dist_tag }}
+      - name: Install publishing CLI
+        run: npm install --global npm@11
+      - run: npm ci
+      - name: Check and publish using npm trusted publishing
+        run: npm publish --access public --tag "$RELEASE_TAG"
+        env:
+          RELEASE_TAG: ${{ inputs.dist_tag }}
