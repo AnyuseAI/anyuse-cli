@@ -198,3 +198,15 @@ API 地址填 origin，不附加 `/v1`。仅回环地址允许 HTTP；其他地�
 [Agent Skill](skills/anyuse/SKILL.md) 随源码和 npm 包一起分发，独立构建产物另附 `SKILL.md`，安装脚本不自动配置 Agent。将该目录复制到所用 Agent 的技能目录，具体位置按 Agent 的文档配置。全局 npm 安装后可用 `npm root -g` 找到 `@anyuse/cli/skills/anyuse`。
 
 贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)，维护者发布步骤见 [RELEASING.md](RELEASING.md)。MIT 许可证见 [LICENSE](LICENSE)。
+
+## 模型与输出规格
+
+图像与视频使用统一 operation，模型在 input 中指定：
+
+```sh
+anyuse capabilities inspect image.generate
+anyuse quote image.generate --input '{"model":"gpt-image-1.5","prompt":"雨天的咖啡馆"}'
+anyuse run image.generate --input '{"model":"seedream-4.5","prompt":"雨天的咖啡馆"}' --max-cost 0.10 --wait
+```
+
+以目标 API 返回的 `variants` 为准，每项提供参数 schema、示例、执行模式和价格。模型能力没有无条件的顶层 pricing；普通能力仍保留。音乐和音效也使用 model，文件转换使用 document.convert 与 input_format/output_format。能力层 execution_mode 可以为 variable；报价和执行的模式仍为 sync/async/stream。旧操作名保留兼容。示例预算仅演示命令，不代表实际售价或已获付费授权。
