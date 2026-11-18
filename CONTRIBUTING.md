@@ -18,5 +18,14 @@ npm run check
 
 提交 Pull Request 时说明行为变化、验证结果和兼容影响。不要提交 `dist/`、`node_modules/`、测试包、`.env`、`.npmrc`、真实 Key 或用户数据。发布由维护者单独操作，详见 [RELEASING.md](RELEASING.md)。
 
+## 构建独立可执行文件
 
-独立文件构建额外需要 `.bun-version` 指定的 Bun。运行 `npm run build:binary` 和 `npm run test:binary`，分别构建、验证本机目标；`npm run build:binary -- --all` 只表示交叉构建，不代表目标系统运行验证。安装器测试用 `npm run test:install`；Windows 构建后用 `pwsh -File test/install.windows.ps1`。
+安装 `.bun-version` 指定的 Bun。在 macOS 或 glibc Linux 上，运行 `npm run build:binary` 和 `npm run test:binary` 构建并验证本机目标。在 Windows x64 上显式传入目标：
+
+```powershell
+npm run build:binary -- windows-x64
+npm run test:binary -- windows-x64
+./test/install.windows.ps1
+```
+
+在 musl Linux 上，按架构向构建和测试命令传入 `linux-x64-musl` 或 `linux-arm64-musl`。Unix 安装器测试使用 `npm run test:install`。跨平台构建使用 `npm run build:binary -- --all`，各目标仍需在对应系统验证。
