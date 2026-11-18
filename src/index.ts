@@ -28,6 +28,7 @@ const help = `anyuse — give your agent access to external capabilities
   anyuse keys create --name <name>
   anyuse keys revoke <id>
 
+--api-url <URL> overrides the API address for this command.
 Environment: ANYUSE_API_URL, ANYUSE_API_KEY, ANYUSE_MAX_COST, ANYUSE_CONFIG_FILE.
 --input accepts JSON or @file.json. Budget precedence: --max-cost > env > config.
 run automatically quotes and executes within budget. No default spending allowance.
@@ -129,8 +130,7 @@ async function main() {
       const deadline = Date.now() + waitSeconds * 1000;
       if (
         result.execution_mode === "stream" &&
-        result.settlement === "reserved" &&
-        result.status !== "unknown"
+        ["dispatching", "running", "cancel_requested"].includes(result.status)
       ) {
         try {
           await client.events(
@@ -156,8 +156,6 @@ async function main() {
     result = { ...result, ...submission };
     if (result.cost_usd != null)
       process.stderr.write(`Charged: USD ${result.cost_usd}\n`);
-    else if (result.reserved_usd != null)
-      process.stderr.write(`Reserved: USD ${result.reserved_usd}; final cost pending.\n`);
   } else if (command === "jobs" && action === "events" && argument) {
     await client.events(
       argument,
@@ -222,6 +220,8 @@ main().catch((error) => {
       error: {
         code: error instanceof APIError ? error.code : "client_error",
         message,
+        status: error instanceof APIError ? error.status : undefined,
+        retry_after: error instanceof APIError ? error.retryAfter : undefined,
       },
     }) + "\n",
   );

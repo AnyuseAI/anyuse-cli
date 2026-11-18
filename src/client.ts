@@ -4,6 +4,7 @@ export class APIError extends Error {
     message: string,
     public status: number,
     public executionID?: string,
+    public retryAfter?: string,
   ) {
     super(message);
   }
@@ -122,6 +123,7 @@ export class Client {
       body?: unknown;
       idempotencyKey?: string;
       public?: boolean;
+      signal?: AbortSignal;
     } = {},
   ): Promise<T> {
     if (!options.public && !this.key)
@@ -141,17 +143,30 @@ export class Client {
       headers,
       body:
         options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: AbortSignal.timeout(20_000),
+      signal: options.signal
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(20_000)])
+        : AbortSignal.timeout(20_000),
       redirect: "error",
     });
     if (response.status === 204) return undefined as T;
-    const data = (await response.json()) as any;
+    const retryAfter = response.headers.get("Retry-After") ?? undefined;
+    const data = await response.json().catch((error: unknown) => {
+      if (!(error instanceof SyntaxError)) throw error;
+      throw new APIError(
+        response.ok ? "invalid_response" : "api_error",
+        `HTTP ${response.status}; response is not valid JSON`,
+        response.status,
+        undefined,
+        retryAfter,
+      );
+    });
     if (!response.ok)
       throw new APIError(
-        data.error?.code || "api_error",
-        data.error?.message || `HTTP ${response.status}`,
+        typeof data?.error?.code === "string" ? data.error.code : "api_error",
+        typeof data?.error?.message === "string" ? data.error.message : `HTTP ${response.status}`,
         response.status,
-        typeof data.execution_id === "string" ? data.execution_id : undefined,
+        typeof data?.execution_id === "string" ? data.execution_id : undefined,
+        retryAfter,
       );
     return data as T;
   }
@@ -163,10 +178,19 @@ export async function waitForExecution(
   timeoutSeconds: number,
 ) {
   const deadline = Date.now() + timeoutSeconds * 1000;
+  // After SSE exhausts the wait budget, allow exactly one bounded status read.
+  const signal = AbortSignal.timeout(timeoutSeconds > 0 ? Math.ceil(timeoutSeconds * 1000) : 20_000);
+  const timedOut = () => new APIError(
+    "wait_timeout",
+    `Waiting stopped. Resume with: anyuse jobs wait ${id}`,
+    408,
+    id,
+  );
   for (;;) {
     const result = await client
-      .request(`/v1/executions/${encodeURIComponent(id)}`)
+      .request(`/v1/executions/${encodeURIComponent(id)}`, { signal })
       .catch((error: unknown) => {
+        if (signal.aborted) throw timedOut();
         if (error instanceof APIError) {
           error.executionID ??= id;
           throw error;
@@ -178,19 +202,12 @@ export async function waitForExecution(
           id,
         );
       });
-    if (
-      result.status === "unknown" ||
-      (["succeeded", "failed", "canceled"].includes(result.status) &&
-        result.settlement !== "reserved")
-    )
-      return result;
-    if (Date.now() >= deadline)
-      throw new APIError(
-        "wait_timeout",
-        `Waiting stopped. Resume with: anyuse jobs wait ${id}`,
-        408,
-        id,
-      );
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    if (signal.aborted || (timeoutSeconds > 0 && Date.now() >= deadline))
+      throw timedOut();
+    if (["succeeded", "failed", "canceled", "unknown"].includes(result.status)) return result;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw timedOut();
+    await new Promise((resolve) => setTimeout(resolve, Math.min(500, remaining)));
+    if (Date.now() >= deadline) throw timedOut();
   }
 }

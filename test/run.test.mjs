@@ -15,7 +15,7 @@ const run = ["run", "rednote.search", "--input", '{"keyword":"咖啡"}'];
 
 async function fixture(t, respond = req => req.url === "/v1/quotes"
   ? [201, fixedQuote]
-  : [200, { id: "job", status: "succeeded", settlement: "settled", cost_usd: "0.020001" }]) {
+  : [200, { id: "job", status: "succeeded", cost_usd: "0.020001" }]) {
   const dir = await mkdtemp(join(tmpdir(), "anyuse-run-"));
   const requests = [];
   const server = http.createServer(async (req, res) => {
@@ -98,16 +98,15 @@ test("non-interactive over-budget run stops before execution and compares micro-
   assert.equal(f.requests.at(-1).url, "/v1/executions");
 });
 
-test("metered quote reserves a positive budget and never interprets zero price as free", async t => {
+test("metered quote requires a positive budget and never interprets zero price as free", async t => {
   const f = await fixture(t, req => req.url === "/v1/quotes"
     ? [201, { ...fixedQuote, requires_budget: true, price_usd: "0.000000" }]
-    : [202, { id: "metered", status: "running", settlement: "reserved", cost_usd: null, reserved_usd: "0.15" }]);
+    : [202, { id: "metered", status: "running", cost_usd: null }]);
   await assert.rejects(f.cli([...run, "--max-cost", "0"]), failed("budget_required"));
   assert.equal(f.requests.length, 1);
   const result = await f.cli([...run, "--max-cost", "0.15"]);
   assert.equal(f.requests.at(-1).body.max_cost_usd, "0.15");
   assert.equal(JSON.parse(result.stdout).cost_usd, null);
-  assert.match(result.stderr, /Reserved: USD 0.15; final cost pending/);
   assert.doesNotMatch(result.stderr, /Charged:/);
 });
 
@@ -172,4 +171,25 @@ test("manual quote remains free and replay submits only the original quote and b
   await f.cli(["run", "--quote", quote.id, "--max-cost", "0.03", "--idempotency-key", "original"]);
   assert.deepEqual(f.requests.map(r => r.url), ["/v1/quotes", "/v1/executions"]);
   assert.equal(f.requests[1].headers["idempotency-key"], "original");
+});
+
+test("released terminal outcomes report zero cost and never repeat the paid submission", async t => {
+  for (const [status, exitCode] of [["failed", 4], ["canceled", 0], ["unknown", 5]]) {
+    const f = await fixture(t, req => req.url === "/v1/quotes" ? [201, fixedQuote] : [200, {
+      id: "released-job", status, cost_usd: "0.000000",
+    }]);
+    let result;
+    try {
+      result = {code: 0, ...await f.cli([...run, "--max-cost", "0.03", "--wait"])};
+    } catch (error) {
+      result = error;
+    }
+    assert.equal(result.code, exitCode);
+    const execution = JSON.parse(result.stdout);
+    assert.equal(execution.status, status);
+    assert.equal(execution.cost_usd, "0.000000");
+    assert.match(result.stderr, /Charged: USD 0.000000/);
+    assert.doesNotMatch(result.stderr, /final cost pending/);
+    assert.deepEqual(f.requests.map(r => r.url), ["/v1/quotes", "/v1/executions", "/v1/executions/released-job"]);
+  }
 });
