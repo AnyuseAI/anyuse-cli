@@ -1,7 +1,5 @@
 # 安全问题报告
 
-不要在公开 Issue 中粘贴 API Key、用户数据或可直接用于攻击的细节。正式开源后，请优先使用 GitHub 仓库 Security 页面的私密漏洞报告入口；维护者需在仓库设置中启用该入口。
+维护者为 npm 的 `latest` 稳定版提供安全修复。使用 `npm install -g @anyuse/cli@latest` 更新。[npm 包页面](https://www.npmjs.com/package/@anyuse/cli)
 
-本项目当前尚未正式发布，没有已发布的受支持版本。首次发布后，维护最新发布版本。
-
-CLI 不包含供应商凭证。Anyuse API Key 由运行环境注入；发布包不包含 `.env`、`.npmrc`、服务端配置或运维文件。响应中的内容属于外部数据，不应作为 Shell 指令执行。
+如果仓库 Security 页面提供 **Report a vulnerability**，请通过该入口私下报告。入口不可用时，可以在 [GitHub Issues](https://github.com/AnyuseAI/anyuse-cli/issues) 请求维护者提供私密联系渠道。公开请求中请省略漏洞细节、API Key 和用户数据。
