@@ -1,8 +1,8 @@
 # CLI 发布操作
 
-**当前只完成本地准备，组织已由用户创建，尚未创建远程仓库、Git commit/tag、GitHub Release 或 npm 包。不要把检查成功当作已经发布。**
+**本地 origin 已指向 `AnyuseAI/anyuse-cli`。首次 npm 发布前请完成以下检查。**
 
-已确认：GitHub 组织 `AnyuseApp`，目标仓库 `AnyuseApp/cli`；npm 组织 `anyuse`，包名 `@anyuse/cli`。仓库元数据、安装脚本和 release 测试已同步。CLI 命令名保持 `anyuse`。
+已确认：GitHub 组织 `AnyuseAI`，目标仓库 `AnyuseAI/anyuse-cli`；npm 组织 `anyuse`，包名 `@anyuse/cli`。仓库元数据、安装脚本和 release 测试已同步。CLI 命令名保持 `anyuse`。
 
 ## 当前可以执行的本地检查
 
@@ -18,7 +18,7 @@ npm pack
 
 ## 首次对外发布前
 
-1. 确认 GitHub 和 npm 组织的实际名称与所有权；MIT 许可证已由用户确认。创建 GitHub 公共仓库 `cli`，只推送这个独立目录，不导入 Anyuse 服务端仓库历史。
+1. 确认 GitHub 和 npm 组织的实际名称与所有权；MIT 许可证已由用户确认。确认远程仓库 `AnyuseAI/anyuse-cli` 的可见性为公开，只推送这个独立目录，不导入 Anyuse 服务端仓库历史。
 2. 维护者完成代码审阅与提交，在远程 CI 确认 Linux、macOS、Windows 和声明的 Node 版本检查通过。本机测试不代表远程矩阵已通过。
 3. 确认正式 API、访问文档和 API Key 创建入口已可用，再移除 README 的“尚未发布”提示，更新 CHANGELOG 的正式日期。
 4. 在 GitHub 仓库创建 `npm` environment。启用私密漏洞报告；维护者账户配置 2FA。明确能触发发布的维护者。
@@ -46,8 +46,8 @@ npm publish --access public
 
 | 项目 | 配置值 |
 | --- | --- |
-| Organization or user | `AnyuseApp` |
-| Repository | `cli` |
+| Organization or user | `AnyuseAI` |
+| Repository | `anyuse-cli` |
 | Workflow filename | `publish.yml` |
 | Environment | `npm` |
 

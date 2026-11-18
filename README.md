@@ -2,11 +2,11 @@
 
 通过 Anyuse API 发现外部能力，在预算内直接执行任务和查询结果。CLI 自动获取报价，无需每次手动核对。支持同步、异步与流式执行，输出可供脚本和 Agent 处理的 JSON。
 
-**当前为发布准备版本，npm 包、GitHub Release 和在线安装脚本均未发布。** GitHub 组织为 `AnyuseApp`，npm scope 为 `@anyuse`，目标仓库为 `AnyuseApp/cli`。下面的在线命令仅用于正式发布后。
+**当前为发布准备版本，npm 包、GitHub Release 和在线安装脚本均未发布。** GitHub 组织为 `AnyuseAI`，npm scope 为 `@anyuse`，目标仓库为 `AnyuseAI/anyuse-cli`。下面的在线命令仅用于正式发布后。
 
 ## 仓库范围
 
-本仓库是独立开源 CLI，目标公开仓库为 `AnyuseApp/cli`，采用 MIT 许可证。仅包含命令行客户端、Agent Skill、安装脚本、测试和发布配置。
+本仓库是独立开源 CLI，目标公开仓库为 `AnyuseAI/anyuse-cli`，采用 MIT 许可证。仅包含命令行客户端、Agent Skill、安装脚本、测试和发布配置。
 
 Anyuse 平台的 Web、管理端、API、执行服务、数据库及部署配置在独立私有仓库维护，不随 CLI 分发。CLI 通过公开 HTTP API 与平台通信，不依赖平台源码、本地目录或 Git 历史。
 
@@ -19,9 +19,9 @@ Anyuse 平台的 Web、管理端、API、执行服务、数据库及部署配置
 macOS / Linux 安装入口（尚未上线）：
 
 ```sh
-curl -fsSL https://github.com/AnyuseApp/cli/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/AnyuseAI/anyuse-cli/releases/latest/download/install.sh | bash
 # 指定版本，不含 v 前缀；可用 ANYUSE_INSTALL_DIR 指定安装目录
-curl -fsSL https://github.com/AnyuseApp/cli/releases/latest/download/install.sh | ANYUSE_VERSION=0.1.0 bash
+curl -fsSL https://github.com/AnyuseAI/anyuse-cli/releases/latest/download/install.sh | ANYUSE_VERSION=0.1.0 bash
 ```
 
 默认安装到 `~/.local/bin/anyuse`。需要 Bash、curl，以及 sha256sum 或 shasum。脚本会校验下载文件、验证启动后再替换已有版本，不需要 sudo，不自动修改 shell 配置；按提示将安装目录加入 PATH。重复安装用于升级，指定版本用于回退。
@@ -29,7 +29,7 @@ curl -fsSL https://github.com/AnyuseApp/cli/releases/latest/download/install.sh 
 Windows x64 在 PowerShell 中下载并执行脚本（尚未上线）：
 
 ```powershell
-Invoke-WebRequest https://github.com/AnyuseApp/cli/releases/latest/download/install.ps1 -OutFile install-anyuse.ps1
+Invoke-WebRequest https://github.com/AnyuseAI/anyuse-cli/releases/latest/download/install.ps1 -OutFile install-anyuse.ps1
 & ./install-anyuse.ps1
 # 可指定 -Version 0.1.0 -InstallDir 'C:\Users\you\bin'
 ```
@@ -133,9 +133,9 @@ anyuse run --quote QUOTE_ID --max-cost 0.10 --idempotency-key REQUEST_KEY --wait
 
 - `pricing` 包含定价版本、计费方式、单位价格和数量。
 - `requires_budget=false` 时，`price_usd` 是本次确定总价；`--max-cost` 至少覆盖该金额。
-- `requires_budget=true` 时，用量执行后才能确定，`price_usd=0` **不表示免费**。提交正数最高预算，服务端先预留，成功后按实际用量结算并释放差额。
-- 执行记录的 `reserved_usd` 是初始预留，`cost_usd` 是实际费用；null 表示未结算。`quoted_price_usd` 是原报价总额。
-- 用量缺失、结果不确定或费用超过预算时，任务可能进入 `unknown/reserved`，由运营核对，不自动追加扣款。
+- `requires_budget=true` 时，用量执行后才能确定，`price_usd=0` **不表示免费**。提交正数最高预算，成功后按实际用量收费。
+- 执行记录的 `cost_usd` 是实际费用；null 表示未结算。`quoted_price_usd` 是原报价总额。
+- 用量缺失、结果不确定或费用超过预算时，任务进入 `unknown`，实际扣费为零，不会后续补扣。平台继续核对业务结果。`failed` 和 `canceled` 同样不收费。
 
 ## 命令
 
@@ -153,16 +153,16 @@ anyuse run --quote QUOTE_ID --max-cost 0.10 --idempotency-key REQUEST_KEY --wait
 | `jobs wait <id> [--timeout <秒>]` | 等待已有执行，不重新提交 |
 | `jobs events <id> [--timeout <秒>]` | 读取一次 SSE 连接，输出 NDJSON |
 | `jobs cancel <id>` | 请求取消支持取消的任务 |
-| `balance` | 查询余额、预留和可用余额 |
+| `balance` | 查询账户余额 |
 | `usage` | 最近 50 次调用 |
 | `keys list` | 列出调用 Key，要求 owner 权限 |
 | `keys create --name <名称>` | 创建调用 Key，要求 owner 权限 |
 | `keys revoke <id>` | 撤销调用 Key，要求 owner 权限 |
 | `--help` / `--version` | 帮助 / 包版本，无需访问网络 |
 
-`--timeout` 为 1–3600 秒，默认 150 秒，适用于等待与事件命令。`run --wait` 等待结束或超时，不等于所有上游都被取消。是否支持取消以执行记录 `can_cancel` 为准。
+`--timeout` 为 1–3600 秒，默认 150 秒，适用于等待与事件命令。`jobs wait` 的在途查询和轮询间隔受此期限约束；`run --wait` 的等待时间从提交成功后开始计算。流式等待耗尽预算后，仍查询一次原执行以恢复最终状态，该次查询最多额外等待 20 秒。停止等待不等于上游已取消；是否支持取消以执行记录 `can_cancel` 为准。
 
-命令响应 JSON 写 stdout，诊断和错误 JSON 写 stderr；帮助和版本是普通文本。`jobs events` 每行一条 JSON。`run --wait` 的流文本写 stderr，最终执行记录写 stdout。`run` 的 JSON 附带 `quote_id`、`max_cost_usd` 和 `idempotency_key`；stderr 显示实际费用或尚未结算的预留金额。余额可用 `anyuse balance` 查询。
+命令响应 JSON 写 stdout，诊断和错误 JSON 写 stderr；帮助和版本是普通文本。`jobs events` 每行一条 JSON。`run --wait` 的流文本写 stderr，最终执行记录写 stdout。`run` 的 JSON 附带 `quote_id`、`max_cost_usd` 和 `idempotency_key`；stderr 显示实际费用。余额可用 `anyuse balance` 查询。
 
 | 退出码 | 含义 |
 | --- | --- |
@@ -170,7 +170,7 @@ anyuse run --quote QUOTE_ID --max-cost 0.10 --idempotency-key REQUEST_KEY --wait
 | 1 | 参数、网络或请求错误，也包括等待超时 |
 | 3 | Key 缺失或身份校验失败 |
 | 4 | 执行失败 |
-| 5 | 执行结果或费用待核对 |
+| 5 | 执行结果待核对；费用以 cost_usd 为准 |
 
 ## 响应丢失与恢复
 
@@ -181,7 +181,11 @@ anyuse jobs get EXECUTION_ID
 anyuse jobs wait EXECUTION_ID --timeout 150
 ```
 
-如需显式重放，用 `run --quote <原报价ID> --max-cost <原预算> --idempotency-key <原键>`，必须保持三项原值。不要为了重试生成新键或重新报价。`unknown` 保留预留，等待运营核对。SSE 断开后查询原执行，不自动重连或重新提交；流断开可能触发上游取消，只有 `canceled/released` 才能确认预留已释放。
+如需显式重放，用 `run --quote <原报价ID> --max-cost <原预算> --idempotency-key <原键>`，必须保持三项原值。不要为了重试生成新键或重新报价。`unknown` 表示结果待平台核对，实际费用为零且不会后续补扣；结果未知不表示可以重新提交。SSE 断开后查询原执行，不自动重连或重新提交。流断开可能触发上游取消；`failed`、`canceled` 和 `unknown` 都表示零扣费，成功交付则按实际结算记录收费。
+
+`executor_busy` 表示执行器满载，尚未开始执行。错误 JSON 保留原请求三项参数及 `execution_id`；服务端提供等待建议时，`error.retry_after` 保留 `Retry-After` 原始字符串（当前为 `1` 秒）。等待建议时间后，先查询原执行；仍为 `dispatching` 且需要恢复时，显式使用原三项参数重放，不重新报价或换键。接收期限为 15 秒，超期后由服务端收敛为失败且不收费。CLI 不自动等待或重发付费请求。
+
+错误 JSON 在适用时包含 `error.status`；非 JSON 的 HTTP 错误也保留状态，不输出原始响应正文。
 
 `provider_mode=mock` 是模拟结果，不能作为真实上游调用成功的证明。
 

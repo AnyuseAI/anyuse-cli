@@ -36,7 +36,7 @@ try {
     $script:DownloadFailure = $false
     & (Join-Path $Root 'install.ps1') -InstallDir $Out
     if ((& $Installed --version) -ne $Version) { throw 'Upgrade failed' }
-    if (-not ($script:Urls -contains 'https://github.com/AnyuseApp/cli/releases/latest/download/anyuse-windows-x64.exe')) { throw 'Wrong latest URL' }
+    if (-not ($script:Urls -contains 'https://github.com/AnyuseAI/anyuse-cli/releases/latest/download/anyuse-windows-x64.exe')) { throw 'Wrong latest URL' }
     Write-Host 'Windows install, upgrade, checksum and download failure checks passed.'
 } finally {
     Remove-Item -LiteralPath $Temp -Recurse -Force

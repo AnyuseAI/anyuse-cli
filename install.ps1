@@ -2,7 +2,7 @@
 param(
     [string]$Version = 'latest',
     [string]$InstallDir = (Join-Path $HOME '.local\bin'),
-    [string]$Repository = 'AnyuseApp/cli'
+    [string]$Repository = 'AnyuseAI/anyuse-cli'
 )
 $ErrorActionPreference = 'Stop'
 if ($Repository -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') { throw 'Invalid repository' }

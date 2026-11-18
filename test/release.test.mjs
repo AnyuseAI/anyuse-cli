@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const exec = promisify(execFile);
 const root = new URL("../", import.meta.url);
 const pkg = JSON.parse(await readFile(new URL("package.json", root), "utf8"));
-const env = { ...process.env, RELEASE_VERSION:pkg.version, RELEASE_TAG:"latest", GITHUB_REF:`refs/tags/v${pkg.version}`, GITHUB_REPOSITORY:"AnyuseApp/cli" };
+const env = { ...process.env, RELEASE_VERSION:pkg.version, RELEASE_TAG:"latest", GITHUB_REF:`refs/tags/v${pkg.version}`, GITHUB_REPOSITORY:"AnyuseAI/anyuse-cli" };
 const script = fileURLToPath(new URL("scripts/check-release.mjs", root));
 test("release checks tag, package version and repository without publishing", async () => {
   const result = await exec(process.execPath, [script], {env});

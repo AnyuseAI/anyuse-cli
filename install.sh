@@ -3,7 +3,7 @@
 set -euo pipefail
 fail() { printf 'anyuse: %s\n' "$*" >&2; exit 1; }
 main() {
-  local version="${ANYUSE_VERSION:-latest}" repo="${ANYUSE_REPOSITORY:-AnyuseApp/cli}"
+  local version="${ANYUSE_VERSION:-latest}" repo="${ANYUSE_REPOSITORY:-AnyuseAI/anyuse-cli}"
   local install_dir="${ANYUSE_INSTALL_DIR:-$HOME/.local/bin}"
   [[ "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || fail 'Invalid repository'
   [[ "$version" == latest || "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || fail 'Invalid version (omit the v prefix)'
