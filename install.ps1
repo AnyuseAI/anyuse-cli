@@ -34,7 +34,7 @@ try {
     Copy-Item -LiteralPath $Binary -Destination $Staging
     $Destination = Join-Path $InstallDir 'anyuse.exe'
     if (Test-Path -LiteralPath $Destination) {
-        [IO.File]::Replace($Staging, $Destination, $null)
+        [IO.File]::Move($Staging, $Destination, $true)
     } else {
         [IO.File]::Move($Staging, $Destination)
     }
