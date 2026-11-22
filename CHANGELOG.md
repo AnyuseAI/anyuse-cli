@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-11-22
+
+更新 npm 安装说明和 Agent Skill 示例，使用当前目录中的能力 ID。
+
 ## 0.1.0 — 2026-11-18
 
 首个公开 npm 版本。需要 Node.js 22.12 或更高版本。[npm 安装页](https://www.npmjs.com/package/@anyuse/cli)
