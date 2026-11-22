@@ -19,19 +19,19 @@ anyuse --version
 
 ```sh
 anyuse capabilities search 小红书
-anyuse capabilities inspect rednote.search
+anyuse capabilities inspect redbook.note.search
 ```
 
 要获取报价或执行搜索，请先在 [Anyuse 控制台创建 API Key](https://anyuse.app/console/keys)，并将它设为环境变量 `ANYUSE_API_KEY`。下面的命令只查看报价，免费。
 
 ```sh
-anyuse quote rednote.search --input '{"keyword":"咖啡"}'
+anyuse quote redbook.note.search --input '{"keyword":"咖啡"}'
 ```
 
 需要实际结果时再执行。此例允许本次调用最多消费 0.10 美元，报价超出预算会直接退出。
 
 ```sh
-anyuse run rednote.search --input '{"keyword":"咖啡"}' --max-cost 0.10 --no-input --wait
+anyuse run redbook.note.search --input '{"keyword":"咖啡"}' --max-cost 0.10 --no-input --wait
 ```
 
 运行中断后，已有执行 ID 时可用 `anyuse jobs get <id>` 查询原任务。完整命令见 `anyuse --help`，自动化调用和请求恢复见 [Agent Skill](skills/anyuse/SKILL.md)。

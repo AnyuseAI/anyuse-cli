@@ -11,7 +11,7 @@ const exec = promisify(execFile);
 const command = process.env.ANYUSE_TEST_BINARY || process.execPath;
 const prefix = process.env.ANYUSE_TEST_BINARY ? [] : [fileURLToPath(new URL("../dist/index.js", import.meta.url))];
 const fixedQuote = { id: "automatic-quote", price_usd: "0.020001", requires_budget: false };
-const run = ["run", "rednote.search", "--input", '{"keyword":"咖啡"}'];
+const run = ["run", "redbook.note.search", "--input", '{"keyword":"咖啡"}'];
 
 async function fixture(t, respond = req => req.url === "/v1/quotes"
   ? [201, fixedQuote]
@@ -47,9 +47,9 @@ function failed(code) {
 test("one run quotes and executes without confirmation, retaining receipt and recovery fields", async t => {
   const f = await fixture(t);
   await writeFile(join(f.dir, "input.json"), '{"keyword":"咖啡"}');
-  const { stdout, stderr } = await f.cli(["run", "rednote.search", "--input", "@input.json", "--max-cost", "0.03", "--idempotency-key", "original", "--wait", "--no-input"]);
+  const { stdout, stderr } = await f.cli(["run", "redbook.note.search", "--input", "@input.json", "--max-cost", "0.03", "--idempotency-key", "original", "--wait", "--no-input"]);
   assert.deepEqual(f.requests.map(r => r.url), ["/v1/quotes", "/v1/executions", "/v1/executions/job"]);
-  assert.deepEqual(f.requests[0].body, { operation: "rednote.search", input: { keyword: "咖啡" } });
+  assert.deepEqual(f.requests[0].body, { operation: "redbook.note.search", input: { keyword: "咖啡" } });
   assert.deepEqual(f.requests[1].body, { quote_id: "automatic-quote", max_cost_usd: "0.03" });
   assert.equal(f.requests[1].headers["idempotency-key"], "original");
   const result = JSON.parse(stdout);
@@ -125,8 +125,8 @@ test("invalid budgets and ambiguous run arguments fail before network access", a
   for (const args of [
     [...run, "--quote", "other"], ["run", "--quote", "other", "--input", "{}"],
     [...run, "extra"], [...run, "--wait", "--timeout", "0"],
-    [...run, "--idempotency-key", ""], ["run", "rednote.search"],
-    ["run", "rednote.search", "--input", "not-json"],
+    [...run, "--idempotency-key", ""], ["run", "redbook.note.search"],
+    ["run", "redbook.note.search", "--input", "not-json"],
   ]) await assert.rejects(f.cli([...args, "--max-cost", "0.03"]), failed("client_error"));
   assert.equal(f.requests.length, 0);
 });
@@ -167,7 +167,7 @@ test("lost or unconfirmed automatic dispatch preserves original quote, budget an
 
 test("manual quote remains free and replay submits only the original quote and budget", async t => {
   const f = await fixture(t);
-  const quote = JSON.parse((await f.cli(["quote", "rednote.search", "--input", "{}"])).stdout);
+  const quote = JSON.parse((await f.cli(["quote", "redbook.note.search", "--input", "{}"])).stdout);
   await f.cli(["run", "--quote", quote.id, "--max-cost", "0.03", "--idempotency-key", "original"]);
   assert.deepEqual(f.requests.map(r => r.url), ["/v1/quotes", "/v1/executions"]);
   assert.equal(f.requests[1].headers["idempotency-key"], "original");
