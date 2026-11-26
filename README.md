@@ -1,39 +1,45 @@
 # Anyuse CLI
 
-在终端搜索 Anyuse 提供的 API、查看报价，并在指定预算内运行任务。输出为 JSON，可直接用于脚本和 Agent。[Anyuse 官网](https://anyuse.app) · [API 文档](https://anyuse.app/docs)
+Search the Anyuse API catalog from your terminal, get a price quote, and run an operation with a per-call spending limit. The CLI returns JSON for scripts and agents.
 
-## 安装
+[中文文档](README.zh-CN.md) · [API docs](https://anyuse.app/docs) · [npm package](https://www.npmjs.com/package/@anyuse/cli)
 
-CLI 已发布到 npm，安装稳定版需要 Node.js 22.12 或更高版本。[npm 包页面](https://www.npmjs.com/package/@anyuse/cli)
+## Install
+
+With Node.js 22.12 or later, install the CLI and check the version:
 
 ```sh
 npm install -g @anyuse/cli@latest
 anyuse --version
 ```
 
-也可以用 `npx @anyuse/cli@latest --help` 直接试用。
+To see the available commands without a global install, run `npx @anyuse/cli@latest --help`.
 
-## 试一次搜索
+## Find an operation
 
-查询目录免费，无需 API Key。用小红书搜索为例，先看它接受哪些参数、返回什么数据。
+Catalog searches are free and work without an API key. For example, find the Xiaohongshu (RedNote) search operation and inspect its input schema and pricing.
 
 ```sh
-anyuse capabilities search 小红书
+anyuse capabilities search redbook
 anyuse capabilities inspect redbook.note.search
 ```
 
-要获取报价或执行搜索，请先在 [Anyuse 控制台创建 API Key](https://anyuse.app/console/keys)，并将它设为环境变量 `ANYUSE_API_KEY`。下面的命令只查看报价，免费。
+## Get a quote
+
+Create an API key in the [Anyuse console](https://anyuse.app/console/keys) and set the `ANYUSE_API_KEY` environment variable in your shell. A quote is free. This example asks what it would cost to search for posts about coffee.
 
 ```sh
-anyuse quote redbook.note.search --input '{"keyword":"咖啡"}'
+anyuse quote redbook.note.search --input '{"keyword":"coffee"}'
 ```
 
-需要实际结果时再执行。此例允许本次调用最多消费 0.10 美元，报价超出预算会直接退出。
+## Run with a spending limit
+
+When you want the search results, run the operation with a budget in USD. The command below gets a fresh quote and submits the search if it fits within $0.10. With `--no-input`, an over-budget quote makes the command exit before submission. Use `--wait` to wait for the result.
 
 ```sh
-anyuse run redbook.note.search --input '{"keyword":"咖啡"}' --max-cost 0.10 --no-input --wait
+anyuse run redbook.note.search --input '{"keyword":"coffee"}' --max-cost 0.10 --no-input --wait
 ```
 
-运行中断后，已有执行 ID 时可用 `anyuse jobs get <id>` 查询原任务。完整命令见 `anyuse --help`，自动化调用和请求恢复见 [Agent Skill](skills/anyuse/SKILL.md)。
+If the wait is interrupted and you have an execution ID, check the existing job with `anyuse jobs get <execution-id>`. For request recovery and automation examples, see the [agent skill](skills/anyuse/SKILL.md) (in Chinese).
 
-[参与开发](CONTRIBUTING.md) · [发布说明](RELEASING.md) · [MIT 许可证](LICENSE)
+[Contributing](CONTRIBUTING.md) · [Release guide](RELEASING.md) · [MIT license](LICENSE)
