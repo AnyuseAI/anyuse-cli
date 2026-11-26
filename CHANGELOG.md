@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-11-27
+
+默认 README 改为英文快速入门。中文说明保存在 [README.zh-CN.md](README.zh-CN.md)，两种语言的文档均随 npm 包分发。
+
 ## 0.1.1 — 2026-11-22
 
 更新 npm 安装说明和 Agent Skill 示例，使用当前目录中的能力 ID。
