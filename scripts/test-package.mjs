@@ -22,7 +22,7 @@ try {
   assert.equal(packed.name, manifest.name);
   assert.equal(packed.version, manifest.version);
   assert.deepEqual(packed.files.map(f => f.path).sort(), [
-    "LICENSE", "README.md", "package.json", "dist/client.js", "dist/index.js", "dist/budget.js", "skills/anyuse/SKILL.md",
+    "LICENSE", "README.md", "README.zh-CN.md", "package.json", "dist/client.js", "dist/index.js", "dist/budget.js", "skills/anyuse/SKILL.md",
   ].sort());
   assert(!manifest.private, "Package must be publishable");
   assert.equal(manifest.publishConfig.access, "public");

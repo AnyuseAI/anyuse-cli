@@ -8,6 +8,7 @@
     "anyuse": "dist/index.js"
   },
   "files": [
+    "README.zh-CN.md",
     "dist/*.js",
     "skills/anyuse/SKILL.md"
   ],
