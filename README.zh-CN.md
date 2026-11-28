@@ -41,3 +41,8 @@ anyuse run redbook.note.search --input '{"keyword":"咖啡"}' --max-cost 0.10 --
 [参与开发](CONTRIBUTING.md) · [发布说明](RELEASING.md) · [MIT 许可证](LICENSE)
 
 站主可将 [anyuse-gsc Skill](skills/anyuse-gsc/SKILL.md) 的完整目录注册到 Agent。npm 包内路径为 `skills/anyuse-gsc/`。可用能力以当前环境的目录为准。
+
+### Jina 网页搜索计费
+
+`search.jina.web` 按 Jina 回执中的实际 token 数收费。当前每百万 tokens 收 $0.0525。Jina 公布的搜索用量从 10,000 tokens 起，AnyUse 直接按回执扣款。20,000 tokens 实扣 $0.001050。报价的 `pricing.usage_hold_usd` 是系统按上游单次最多 200 万 tokens 计算的临时预留，当前为 $0.105。用户授权按量调用后，可省略 `max_cost_usd`。显式限额低于预留、钱包可用余额不足或 API Key 剩余额度不足时，调用在发往上游前被拒绝。成功结算后释放余款。
+CLI 运行 `anyuse run search.jina.web` 时自动使用报价中的预留。已设置的单次预算仍然有效。已确认的 Jina 报价也可运行 `anyuse run --quote <id>`，省略金额即可使用报价中的预留；重放须复用原幂等键和金额字段。

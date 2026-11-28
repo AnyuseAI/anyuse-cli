@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { APIError, Client, waitForExecution } from "./client.js";
-import { authorizeQuote, budget, configure } from "./budget.js";
+import { authorizeQuote, budget, configure, configuredMaxCost } from "./budget.js";
 
 const help = `anyuse — give your agent access to external capabilities
 
@@ -13,8 +13,9 @@ const help = `anyuse — give your agent access to external capabilities
   anyuse capabilities inspect <operation>
   anyuse auth status
   anyuse quote <operation> --input '{"keyword":"咖啡"}'
-  anyuse run <operation> --input @input.json [--max-cost 0.10] [--wait]
-  anyuse run --quote <quote-id> --max-cost 0.10 [--idempotency-key <key>] [--wait]
+  anyuse run <operation> --input @input.json [--max-cost <USD>] [--wait]
+  anyuse run search.jina.web --input '{"query":"coffee"}' --wait
+  anyuse run --quote <quote-id> [--max-cost <USD>] [--idempotency-key <key>] [--wait]
   anyuse config set max-cost <USD>
   anyuse config get
   anyuse config unset max-cost
@@ -31,13 +32,14 @@ const help = `anyuse — give your agent access to external capabilities
 --api-url <URL> overrides the API address for this command.
 Environment: ANYUSE_API_URL, ANYUSE_API_KEY, ANYUSE_MAX_COST, ANYUSE_CONFIG_FILE.
 --input accepts JSON or @file.json. Budget precedence: --max-cost > env > config.
-run automatically quotes and executes within budget. No default spending allowance.
+run automatically quotes and executes within budget. For a saved Jina Search quote, omit --max-cost to use its hold. Other saved quotes require a maximum.
 Over budget: asks once in a terminal; --no-input or non-interactive use fails instead.
 Command responses are JSON; help and version are plain text.
+Jina Search bills actual tokens and automatically uses the quoted wallet hold when no limit is set.
 run may incur charges; quote and discovery do not. No automatic paid retries.
 `;
 
-let submission: { quote_id: string; max_cost_usd: string; idempotency_key: string } | undefined;
+let submission: { quote_id: string; max_cost_usd?: string; idempotency_key: string } | undefined;
 
 async function input(value?: string) {
   if (value === undefined) throw new Error("--input is required");
@@ -102,24 +104,29 @@ async function main() {
         (action && values.quote) || (values.quote && values.input !== undefined))
       throw new Error("Use run <operation> --input <JSON|@file> or run --quote <id>; do not combine them");
     const waitSeconds = values.wait ? timeout(values.timeout!) : 0;
-    const limit = await budget(values["max-cost"]);
+    const configured = await configuredMaxCost(values["max-cost"]);
+    const allowQuotedHold = !action || action === "search.jina.web";
+    const limit = !allowQuotedHold || configured !== undefined ? budget(configured) : undefined;
     const key = values["idempotency-key"] ?? randomUUID();
     if (!key.trim() || Buffer.byteLength(key) > 128)
       throw new Error("--idempotency-key must be 1–128 bytes");
     let quoteID = values.quote;
-    let maxCost = limit.value;
+    let maxCost = limit?.value;
     if (action) {
       const response = await client.request("/v1/quotes", {
         method: "POST",
         body: { operation: action, input: await input(values.input) },
       });
-      const authorized = await authorizeQuote(response, limit, !!values["no-input"]);
+      const quoted = response as { pricing?: { usage_hold_usd?: string }; price_usd?: string; requires_budget?: boolean };
+      const hold = quoted?.requires_budget === false && quoted.pricing?.usage_hold_usd === quoted.price_usd
+        ? quoted.price_usd : undefined;
+      const authorized = await authorizeQuote(response, limit ?? budget(hold), !!values["no-input"]);
       quoteID = authorized.quote.id;
       maxCost = authorized.maxCost;
     }
     submission = { quote_id: quoteID!, max_cost_usd: maxCost, idempotency_key: key };
     process.stderr.write(
-      `Quote-ID: ${quoteID}\nMax-Cost-USD: ${maxCost}\nIdempotency-Key: ${key}\nKeep these values if the response is lost; do not run the operation again.\n`,
+      `Quote-ID: ${quoteID}\nMax-Cost-USD: ${maxCost ?? "omitted (quoted usage hold)"}\nIdempotency-Key: ${key}\nKeep these values if the response is lost; do not run the operation again.\n`,
     );
     result = await client.request("/v1/executions", {
       method: "POST",

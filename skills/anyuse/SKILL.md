@@ -12,7 +12,7 @@ description: 通过 Anyuse CLI 发现外部能力，在授权预算内直接调�
 1. 用 `anyuse capabilities search <关键词>` 找能力；无结果时列出全部能力。
 2. 用 `anyuse capabilities inspect <operation>` 读取 schema、pricing 计费规则、模式和限制。模型能力读取 variants，每项具有独立 schema、示例和 pricing；用 input.model 选择模型，不为新模型拼接 operation 后缀。图像使用 image.any.generate，视频使用 video.any.generate。
 3. 确认任务在用户已授权的费用范围内。CLI 预算优先级为 `--max-cost` > `ANYUSE_MAX_COST` > `anyuse config set max-cost` 保存值。已有明确预算时不重复询问报价，不要求用户复制报价 ID；没有费用授权时才询问预算，不自行设置或提高默认额度。
-4. 直接执行 `anyuse run <operation> --input @input.json --max-cost <本次上限> --no-input --wait`。CLI 自动取得免费报价并在预算内提交。`budget_exceeded` 表示尚未提交执行，仅此时申请超出额度的费用授权；不得自行提高上限重试。`budget_required` 表示缺少适用预算，先取得授权。按用量计费需要正数最高预算，`price_usd=0` 不代表免费；成功后按实际用量收费。不要在本地持有供应商凭证。
+4. 直接执行 `anyuse run <operation> --input @input.json --max-cost <本次上限> --no-input --wait`。CLI 自动取得免费报价并在预算内提交。`budget_exceeded` 表示尚未提交执行，仅此时申请超出额度的费用授权；不得自行提高上限重试。`budget_required` 表示缺少适用预算，先取得授权。Jina 搜索可自动预留（见下文）。其他 `requires_budget=true` 的报价需要正数最高预算，`price_usd=0` 不代表免费；成功后按实际用量收费。不要在本地持有供应商凭证。
 5. 已获得任务 ID 时，用 `anyuse jobs get/wait <id>` 查询。sync/async 结束等待不会取消上游调用；stream 断线默认取消。
 
 单次默认预算不等于整项任务总预算。任务包含多次调用或分页时，累计已完成调用的费用，并为每笔进行中的调用计入其最高预算；每次的 `--max-cost` 不得超过用户授权的剩余总预算。剩余额度不足时停止，不因为每次都在单次上限内就继续调用。默认直接执行；只有用户想先看价格、比较渠道或估算成本时，才单独用 `anyuse quote <operation> --input @input.json`（报价有效期 5 分钟，不收费）。
@@ -30,3 +30,7 @@ description: 通过 Anyuse CLI 发现外部能力，在授权预算内直接调�
 报价与执行的 `execution_mode` 是 sync/async/stream；能力目录可为 variable，必须读取所选模型或报价的实际模式。`run --wait` 对 stream 消费一次事件连接，delta 写 stderr，最终 execution 写 stdout；`jobs events <id>` 输出 NDJSON。事件断开后 GET 原执行，不自动重连或重新 run。run --wait 的流式等待预算耗尽后仍查询一次原执行，该次查询最多额外等待 20 秒；普通 jobs wait 的查询受 --timeout 期限约束。`jobs cancel <id>` 请求取消 async/stream；failed、canceled 和 unknown 均不收费；unknown 仍表示业务结果待核对，不自行重试。input_schema 与 output_schema 分开；result.data 为业务字段，null 表示无法确认；公开响应不提供 result.raw 或渠道任务标识。生成媒体使用 result.data.files 的 url/kind。下载前将相对 URL 按当前 Anyuse API 地址解析，只向同一 origin 的执行文件端点发送 Bearer 凭证，禁止将凭证转发到其他来源。下载链接可能过期。
 
 站主搜索表现、URL 索引检查和站点地图管理使用配套的 anyuse-gsc Skill。
+
+## Jina 网页搜索
+
+用户授权按量搜索后，直接运行 `anyuse run search.jina.web --input @input.json --no-input --wait`。CLI 使用报价中的 `pricing.usage_hold_usd` 自动预留；已有的任务预算、环境变量和配置限额仍然有效。每次调用先检查剩余任务预算能覆盖整笔预留，结算后按实际扣款更新预算。当前费率每百万 tokens $0.0525，按上游回执实扣，单次预留 $0.105。查询最新报价确认预留和费率。已授权的 Jina 报价也可执行 `anyuse run --quote <id> --no-input --wait`。恢复时复用原幂等键和金额字段；原请求省略金额时保持省略。

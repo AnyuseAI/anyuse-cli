@@ -193,3 +193,31 @@ test("released terminal outcomes report zero cost and never repeat the paid subm
     assert.deepEqual(f.requests.map(r => r.url), ["/v1/quotes", "/v1/executions", "/v1/executions/released-job"]);
   }
 });
+
+test("Jina Search uses the quoted hold and respects a configured lower limit", async t => {
+  const f = await fixture(t, req => req.url === "/v1/quotes"
+    ? [201, { ...fixedQuote, price_usd: "0.105000", pricing: { usage_hold_usd: "0.105000" } }]
+    : [202, { id: "search", status: "succeeded", cost_usd: "0.001050" }]);
+  const search = ["run", "search.jina.web", "--input", '{"query":"coffee"}', "--no-input"];
+  await f.cli(search);
+  assert.equal(f.requests.at(-1).body.max_cost_usd, "0.105000");
+  await assert.rejects(f.cli(search, { ANYUSE_MAX_COST: "0.000525" }), failed("budget_exceeded"));
+  assert.equal(f.requests.filter(r => r.url === "/v1/executions").length, 1);
+});
+
+test("saved Jina quote can use its disclosed hold and replay the same omitted amount", async t => {
+  const f = await fixture(t, req => {
+    const valid = req.body.quote_id === "jina" && req.body.max_cost_usd === undefined;
+    return valid ? [202, { id: "existing", status: "succeeded", cost_usd: "0.001050" }]
+      : [400, { error: { code: "invalid_amount", message: "Maximum required for this quote." } }];
+  });
+  const args = ["run", "--quote", "jina", "--idempotency-key", "same", "--no-input"];
+  for (let i = 0; i < 2; i++) {
+    const result = JSON.parse((await f.cli(args)).stdout);
+    assert.equal(result.id, "existing");
+    assert.equal(Object.hasOwn(result, "max_cost_usd"), false);
+    assert.deepEqual(f.requests.at(-1).body, { quote_id: "jina" });
+  }
+  await assert.rejects(f.cli(["run", "--quote", "other", "--no-input"]), failed("invalid_amount"));
+  assert.equal(f.requests.length, 3);
+});

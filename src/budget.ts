@@ -45,16 +45,19 @@ export async function configure(action: string, key?: string, value?: string) {
   return { path: configPath(), ...config };
 }
 
-export async function budget(override?: string) {
-  const value = override ?? process.env.ANYUSE_MAX_COST ?? (await readConfig()).max_cost_usd;
+export async function configuredMaxCost(override?: string) {
+  return override ?? process.env.ANYUSE_MAX_COST ?? (await readConfig()).max_cost_usd;
+}
+
+export function budget(value?: string) {
   if (value === undefined)
     throw new APIError("budget_required", "Set --max-cost <USD> or a default with: anyuse config set max-cost <USD>. No execution submitted.", 400);
   return { value, micros: money(value) };
 }
 
-export type Quote = { id: string; price_usd: string; requires_budget: boolean };
+export type Quote = { id: string; price_usd: string; requires_budget: boolean; pricing?: { usage_hold_usd?: string } };
 
-export async function authorizeQuote(raw: unknown, limit: Awaited<ReturnType<typeof budget>>, noInput: boolean) {
+export async function authorizeQuote(raw: unknown, limit: ReturnType<typeof budget>, noInput: boolean) {
   const quote = raw as Quote;
   if (!quote || typeof quote.id !== "string" || !quote.id ||
       typeof quote.price_usd !== "string" || typeof quote.requires_budget !== "boolean")
@@ -63,7 +66,9 @@ export async function authorizeQuote(raw: unknown, limit: Awaited<ReturnType<typ
   if (quote.requires_budget && limit.micros === 0n)
     throw new APIError("budget_required", "This operation requires a positive budget; price_usd=0 is not a free price. Set --max-cost <USD>. No execution submitted.", 400);
   if (price <= limit.micros) return { quote, maxCost: limit.value };
-  const message = `Quote costs USD ${quote.price_usd}, above your per-call budget of USD ${limit.value}.`;
+  const message = quote.pricing?.usage_hold_usd
+    ? `The wallet hold of USD ${quote.price_usd} exceeds your per-call budget of USD ${limit.value}. Actual token usage is charged after delivery.`
+    : `Quote costs USD ${quote.price_usd}, above your per-call budget of USD ${limit.value}.`;
   if (!noInput && process.stdin.isTTY && process.stderr.isTTY) {
     const readline = createInterface({ input: process.stdin, output: process.stderr });
     const approved = await new Promise<boolean>((resolve) => {

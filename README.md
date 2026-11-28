@@ -45,3 +45,8 @@ If the wait is interrupted and you have an execution ID, check the existing job 
 [Contributing](CONTRIBUTING.md) · [Release guide](RELEASING.md) · [MIT license](LICENSE)
 
 For Search Console workflows, register the entire [anyuse-gsc skill directory](skills/anyuse-gsc/SKILL.md) with your agent. The npm package contains it under `skills/anyuse-gsc/`. Check the live capability catalog for availability.
+
+### Jina Search billing
+
+Jina Search (`search.jina.web`) bills actual tokens reported by the provider. At the current tariff, 10,000 tokens cost $0.000525 and 20,000 cost $0.001050. The quote’s `pricing.usage_hold_usd` is a temporary wallet reservation covering the provider’s 2,000,000-token maximum ($0.105 at this tariff). Check the live quote and the user's spending authorization. Submit without `max_cost_usd` or pass the quoted hold. A smaller limit, insufficient available balance or insufficient API-key allowance prevents dispatch. Successful settlement releases unused funds.
+With `anyuse run search.jina.web`, the CLI uses the quoted hold automatically when no spending limit is configured. An existing lower limit still applies. An already approved Jina quote also supports `anyuse run --quote <id>` without a configured limit. Replay with the original idempotency key and preserve whether the amount was omitted.
