@@ -10,7 +10,8 @@
   "files": [
     "README.zh-CN.md",
     "dist/*.js",
-    "skills/anyuse/SKILL.md"
+    "skills/anyuse/SKILL.md",
+    "skills/anyuse-gsc"
   ],
   "engines": {
     "node": ">=22.12"

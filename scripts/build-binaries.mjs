@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';
-import { mkdir, readFile, writeFile, chmod, copyFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, chmod, cp, copyFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -63,5 +63,6 @@ if (isDirectRun()) {
     await copyFile(path.join(root, name), path.join(output, name));
   }
   await copyFile(path.join(root, 'skills/anyuse/SKILL.md'), path.join(output, 'SKILL.md'));
+  await cp(path.join(root, "skills/anyuse-gsc"), path.join(output, "anyuse-gsc"), { recursive: true });
   console.log(`Prepared ${selected.length} executable(s) in artifacts/. Nothing was published.`);
 }

@@ -39,3 +39,5 @@ anyuse run redbook.note.search --input '{"keyword":"咖啡"}' --max-cost 0.10 --
 运行中断后，已有执行 ID 时可用 `anyuse jobs get <id>` 查询原任务。完整命令见 `anyuse --help`，自动化调用和请求恢复见 [Agent Skill](skills/anyuse/SKILL.md)。
 
 [参与开发](CONTRIBUTING.md) · [发布说明](RELEASING.md) · [MIT 许可证](LICENSE)
+
+站主可将 [anyuse-gsc Skill](skills/anyuse-gsc/SKILL.md) 的完整目录注册到 Agent。npm 包内路径为 `skills/anyuse-gsc/`。可用能力以当前环境的目录为准。

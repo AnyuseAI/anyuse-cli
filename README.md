@@ -43,3 +43,5 @@ anyuse run redbook.note.search --input '{"keyword":"coffee"}' --max-cost 0.10 --
 If the wait is interrupted and you have an execution ID, check the existing job with `anyuse jobs get <execution-id>`. For request recovery and automation examples, see the [agent skill](skills/anyuse/SKILL.md) (in Chinese).
 
 [Contributing](CONTRIBUTING.md) · [Release guide](RELEASING.md) · [MIT license](LICENSE)
+
+For Search Console workflows, register the entire [anyuse-gsc skill directory](skills/anyuse-gsc/SKILL.md) with your agent. The npm package contains it under `skills/anyuse-gsc/`. Check the live capability catalog for availability.
