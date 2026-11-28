@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 — 2026-11-28
+
+- Jina 网页搜索使用报价中的预留金额，按实际 token 用量结算。已配置的单次预算仍然生效。
+- npm 包包含 Google Search Console Skill，可用于查询搜索表现、检查 URL 索引和管理站点地图。
+
 ## 0.1.2 — 2026-11-27
 
 默认 README 改为英文快速入门。中文说明保存在 [README.zh-CN.md](README.zh-CN.md)，两种语言的文档均随 npm 包分发。
